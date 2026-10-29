@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultados | Encuesta Wi-Fi BBVA</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="inner">
+      <img class="logo" src="/img/bbva-logo.png" alt="BBVA">
+      <span class="title">Panel de resultados</span>
+      <span class="spacer"></span>
+      <span class="user" id="who"></span>
+      <form method="post" action="/admin/logout"><button class="btn btn-ghost" type="submit">Salir</button></form>
+    </div>
+  </header>
+
+  <main>
+    <div class="admin-wrap">
+      <div class="admin-head">
+        <div>
+          <h1>Experiencia Wi-Fi</h1>
+          <div class="share">Liga de la encuesta: <code id="survey-url"></code> <button class="btn btn-secondary" data-copy="survey-url" type="button">Copiar</button></div>
+          <div class="share">Modo encuestador: <code id="surveyor-url"></code> <button class="btn btn-secondary" data-copy="surveyor-url" type="button">Copiar</button></div>
+        </div>
+        <form class="filters" id="filters">
+          <label>Desde <input type="date" name="desde"></label>
+          <label>Hasta <input type="date" name="hasta"></label>
+          <button class="btn btn-primary" type="submit">Filtrar</button>
+          <button class="btn btn-secondary" type="button" id="clear">Limpiar</button>
+          <a class="btn btn-secondary" id="export" href="/admin/api/exportar.csv">Descargar CSV</a>
+        </form>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Respuestas</div><div class="val" id="k-total">0</div><div class="sub" id="k-range">Todo el periodo</div></div>
+        <div class="kpi"><div class="lbl">Calificación promedio</div><div class="val" id="k-avg">–</div><div class="sub">de 5 estrellas</div></div>
+        <div class="kpi good"><div class="lbl">Excelente (5★)</div><div class="val" id="k-5">0%</div><div class="sub" id="k-5n"></div></div>
+        <div class="kpi mid"><div class="lbl">Buena (4★)</div><div class="val" id="k-4">0%</div><div class="sub" id="k-4n"></div></div>
+        <div class="kpi bad"><div class="lbl">Con problemas (1–3★)</div><div class="val" id="k-13">0%</div><div class="sub" id="k-13n"></div></div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="general" role="tab">General</button>
+        <button class="tab" data-tab="buena" role="tab">Buena (4★)</button>
+        <button class="tab" data-tab="problemas" role="tab">Con problemas (1–3★)</button>
+        <button class="tab" data-tab="comentarios" role="tab">Comentarios</button>
+        <button class="tab" data-tab="detalle" role="tab">Detalle</button>
+      </div>
+
+      <section data-pane="general" class="grid">
+        <div class="panel"><h3>Distribución de calificaciones</h3><div class="chart-box"><canvas id="c-rating"></canvas></div></div>
+        <div class="panel"><h3>Respuestas por día</h3><div class="chart-box"><canvas id="c-days"></canvas></div></div>
+        <div class="panel"><h3>Tipo de colaborador</h3><div class="chart-box"><canvas id="c-colab"></canvas></div></div>
+        <div class="panel"><h3>Canal de respuesta</h3><div class="chart-box"><canvas id="c-canal"></canvas></div></div>
+        <div class="panel"><h3>Equipo de trabajo</h3><div class="chart-box"><canvas id="c-equipos"></canvas></div></div>
+        <div class="panel wide"><h3>Calificación promedio por piso</h3><div class="chart-box"><canvas id="c-pisos"></canvas></div></div>
+      </section>
+
+      <section data-pane="buena" class="grid hidden">
+        <div class="panel"><h3>¿Qué aspectos mejorarías de la red Wi-Fi?</h3><div class="chart-box"><canvas id="c-mejoras"></canvas></div></div>
+        <div class="panel"><h3>Dispositivo en el que se presentó el problema</h3><div class="chart-box"><canvas id="c-dispositivo"></canvas></div></div>
+        <div class="panel wide"><h3>Otros aspectos mencionados</h3><div id="l-mejoras-otro" class="comment-list"></div></div>
+      </section>
+
+      <section data-pane="problemas" class="grid hidden">
+        <div class="panel wide"><h3>Principal problema al utilizar la red Wi-Fi</h3><div class="chart-box"><canvas id="c-problemas"></canvas></div></div>
+        <div class="panel"><h3>Frecuencia de los problemas</h3><div class="chart-box"><canvas id="c-frecuencia"></canvas></div></div>
+        <div class="panel"><h3>¿Lo reportaron a soporte técnico?</h3><div class="chart-box"><canvas id="c-reportado"></canvas></div></div>
+        <div class="panel wide"><h3>Otros problemas mencionados</h3><div id="l-problemas-otro" class="comment-list"></div></div>
+      </section>
+
+      <section data-pane="comentarios" class="hidden">
+        <div id="l-comentarios" class="comment-list"></div>
+      </section>
+
+      <section data-pane="detalle" class="hidden">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Fecha</th><th>Canal</th><th>Calificación</th><th>Piso</th><th>Colaborador</th><th>Equipo</th><th>Mejoras / Problemas</th><th>Frecuencia</th><th>¿Reportado?</th><th>Comentarios</th><th></th></tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/vendor/chart.umd.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

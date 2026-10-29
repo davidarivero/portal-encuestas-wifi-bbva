@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso | Encuesta Wi-Fi BBVA</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="inner">
+      <img class="logo" src="/img/bbva-logo.png" alt="BBVA">
+      <span class="title">Panel de resultados</span>
+    </div>
+  </header>
+  <section class="hero">
+    <h1>Acceso al panel</h1>
+    <p>Encuesta de experiencia Wi-Fi</p>
+  </section>
+  <main>
+    <div class="login-wrap">
+      <form class="card" method="post" action="/admin/login">
+        <div id="error" class="error-box hidden" role="alert">Usuario o contraseña incorrectos.</div>
+        <label for="usuario">Usuario</label>
+        <input type="text" id="usuario" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="nombre.apellido">
+        <label for="contrasena">Contraseña</label>
+        <input type="password" id="contrasena" name="contrasena" autocomplete="current-password" required>
+        <button class="btn btn-primary" type="submit">Entrar</button>
+      </form>
+    </div>
+  </main>
+  <footer><a href="/">Ir a la encuesta</a></footer>
+  <script src="/js/login.js"></script>
+</body>
+</html>

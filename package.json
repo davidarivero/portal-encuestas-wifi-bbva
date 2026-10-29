@@ -1,0 +1,24 @@
+{
+  "name": "portal-encuestas-wifi-bbva",
+  "version": "1.0.0",
+  "description": "Portal de encuesta de experiencia Wi-Fi BBVA con panel de resultados",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "test": "node --test"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "chart.js": "^4.6.1",
+    "cookie-session": "^2.1.1",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.1"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}

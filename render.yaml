@@ -1,0 +1,31 @@
+# Blueprint de Render: crea el servicio web y la base de datos PostgreSQL.
+# En Render: New > Blueprint > selecciona este repositorio.
+services:
+  - type: web
+    name: encuesta-wifi-bbva
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: encuesta-wifi-bbva-db
+          property: connectionString
+      # Contraseñas de los administradores: Render las pedirá al crear el Blueprint.
+      - key: PASSWORD_DAVID_RIVERO
+        sync: false
+      - key: PASSWORD_LUISOCTAVIO_RUBIO
+        sync: false
+
+databases:
+  - name: encuesta-wifi-bbva-db
+    databaseName: encuesta_wifi
+    plan: free

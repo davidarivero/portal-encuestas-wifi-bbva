@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#001391">
+  <title>Tu experiencia Wi-Fi nos importa | BBVA</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/survey.css">
+</head>
+<body class="sv-body">
+  <header class="topbar sv-topbar">
+    <div class="inner">
+      <img class="logo" src="/img/bbva-logo.png" alt="BBVA">
+      <span class="title">Encuesta de experiencia Wi-Fi</span>
+      <span class="spacer"></span>
+      <button type="button" class="sv-speech-toggle hidden" id="speech-toggle" aria-controls="speech" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg>
+        <span>Guía de speech</span>
+      </button>
+    </div>
+    <div class="sv-progress hidden" id="progress" role="progressbar" aria-label="Avance de la encuesta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="sv-progress-bar" id="progress-bar"></div>
+    </div>
+  </header>
+
+  <main class="sv-main">
+    <div class="sv-waves" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+
+    <div class="sv-stage" id="stage" aria-live="polite"></div>
+
+    <nav class="sv-nav hidden" id="nav">
+      <button type="button" class="sv-back" id="back" aria-label="Pregunta anterior">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Anterior
+      </button>
+      <span class="sv-count" id="count"></span>
+    </nav>
+  </main>
+
+  <aside class="sv-speech hidden" id="speech" aria-label="Guía de speech para el encuestador">
+    <div class="sv-speech-head">
+      <div>
+        <div class="sv-speech-kicker">Modo encuestador</div>
+        <h2>Guía de speech</h2>
+      </div>
+      <button type="button" class="sv-speech-close" id="speech-close" aria-label="Cerrar guía">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p class="sv-speech-time">Tiempo aproximado de la encuesta: <strong>3 a 5 min</strong></p>
+
+    <section class="sv-speech-block" data-stage="inicio">
+      <h3><span>1</span> Inicio y presentación</h3>
+      <blockquote>Buen día. Mi nombre es <mark>[tu nombre]</mark> y estamos realizando una breve encuesta para conocer la experiencia de los usuarios con la conexión Wi-Fi de BBVA.</blockquote>
+      <blockquote>¿Tendría un minuto disponible para responder unas preguntas rápidas? La intención es identificar oportunidades de mejora en el servicio y contribuir a que su experiencia de conexión sea cada vez mejor.</blockquote>
+    </section>
+
+    <section class="sv-speech-block" data-stage="acepta">
+      <h3><span>2a</span> Si el usuario acepta</h3>
+      <blockquote>Muchas gracias por su apoyo. Le haré unas preguntas breves sobre su experiencia al conectarse a la red Wi-Fi. Sus respuestas nos ayudarán a identificar áreas de oportunidad y fortalecer el servicio.</blockquote>
+    </section>
+
+    <section class="sv-speech-block" data-stage="ocupado">
+      <h3><span>2b</span> Si el usuario está ocupado</h3>
+      <blockquote>Entiendo, no se preocupe. ¿Le sería posible atendernos en otro momento que le resulte más conveniente? No queremos interrumpir sus actividades.</blockquote>
+    </section>
+
+    <section class="sv-speech-block" data-stage="cierre">
+      <h3><span>3</span> Cierre de la encuesta</h3>
+      <blockquote>Muchas gracias por su tiempo y participación. Sus comentarios son importantes para ayudarnos a mejorar la experiencia de conexión Wi-Fi en BBVA. Que tenga un excelente día.</blockquote>
+    </section>
+
+    <section class="sv-speech-tips">
+      <h3>Recomendaciones</h3>
+      <ul>
+        <li><strong>Aborda en el momento adecuado:</strong> evita acercarte cuando el usuario esté en una llamada, reunión o concentrado en una actividad importante.</li>
+        <li><strong>Sé breve y natural:</strong> procura que la encuesta dure entre uno y dos minutos.</li>
+        <li><strong>No sugieras respuestas:</strong> mantén una actitud neutral para obtener información real sobre la experiencia del usuario.</li>
+        <li><strong>No asumas que existe una falla:</strong> el objetivo es conocer su experiencia, incluso si su conexión funciona correctamente.</li>
+        <li><strong>Respeta su decisión:</strong> si no tiene tiempo o no desea participar, agradece y retírate amablemente.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <footer class="sv-footer">BBVA · Encuesta interna de experiencia Wi-Fi. Tus respuestas son anónimas.</footer>
+  <script src="/js/survey.js"></script>
+</body>
+</html>
