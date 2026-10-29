@@ -54,7 +54,15 @@ app.use(
   })
 );
 
-app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: isProd ? '1h' : 0 }));
+// HTML, JS y CSS se revalidan siempre para que un despliegue nuevo se vea de inmediato;
+// las imágenes sí se guardan en caché.
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    setHeaders(res, file) {
+      res.setHeader('Cache-Control', /\.(png|jpe?g|svg|webp)$/.test(file) ? 'public, max-age=86400' : 'no-cache');
+    },
+  })
+);
 const CHART_JS = path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.min.js');
 app.get('/vendor/chart.umd.js', (req, res) => res.sendFile(CHART_JS));
 
