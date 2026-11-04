@@ -30,10 +30,22 @@
         <form class="filters" id="filters">
           <label>Desde <input type="date" name="desde"></label>
           <label>Hasta <input type="date" name="hasta"></label>
+          <label>Sede
+            <select name="sede">
+              <option value="">Todas</option>
+              <option>Parques Polanco</option>
+              <option>Torre Reforma</option>
+            </select>
+          </label>
           <button class="btn btn-primary" type="submit">Filtrar</button>
           <button class="btn btn-secondary" type="button" id="clear">Limpiar</button>
           <a class="btn btn-secondary" id="export" href="/admin/api/exportar.csv">Descargar CSV</a>
         </form>
+      </div>
+      <div class="report-bar">
+        <span>Reporte ejecutivo del periodo y sede seleccionados:</span>
+        <a class="btn btn-primary" id="report-pdf" href="/admin/api/reporte.pdf">Descargar PDF</a>
+        <a class="btn btn-primary" id="report-pptx" href="/admin/api/reporte.pptx">Descargar PowerPoint</a>
       </div>
 
       <div class="kpis">
@@ -55,6 +67,7 @@
       <section data-pane="general" class="grid">
         <div class="panel"><h3>Distribución de calificaciones</h3><div class="chart-box"><canvas id="c-rating"></canvas></div></div>
         <div class="panel"><h3>Respuestas por día</h3><div class="chart-box"><canvas id="c-days"></canvas></div></div>
+        <div class="panel"><h3>Respuestas por sede</h3><div class="chart-box"><canvas id="c-sede"></canvas></div></div>
         <div class="panel"><h3>Tipo de colaborador</h3><div class="chart-box"><canvas id="c-colab"></canvas></div></div>
         <div class="panel"><h3>Canal de respuesta</h3><div class="chart-box"><canvas id="c-canal"></canvas></div></div>
         <div class="panel"><h3>Equipo de trabajo</h3><div class="chart-box"><canvas id="c-equipos"></canvas></div></div>
@@ -82,7 +95,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Fecha</th><th>Canal</th><th>Calificación</th><th>Piso</th><th>Colaborador</th><th>Equipo</th><th>Mejoras / Problemas</th><th>Frecuencia</th><th>¿Reportado?</th><th>Comentarios</th><th></th></tr>
+              <tr><th>Fecha</th><th>Canal</th><th>Sede</th><th>Calificación</th><th>Piso</th><th>Colaborador</th><th>Equipo</th><th>Mejoras / Problemas</th><th>Frecuencia</th><th>¿Reportado?</th><th>Comentarios</th><th></th></tr>
             </thead>
             <tbody id="rows"></tbody>
           </table>
@@ -92,6 +105,7 @@
   </main>
 
   <script src="/vendor/chart.umd.js"></script>
+  <script src="/vendor/chartjs-plugin-datalabels.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

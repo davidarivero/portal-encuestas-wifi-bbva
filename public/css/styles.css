@@ -166,3 +166,6 @@ tr:hover td { background: #f7f9fd; }
 .share { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
 .share code { background: #fff; border: 1px solid var(--line); padding: 6px 10px; border-radius: var(--radius); color: var(--ink); word-break: break-all; }
 .actions.center { justify-content: center; }
+.filters select { padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; min-width: 150px; }
+.report-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin: -6px 0 20px; font-size: 13px; color: var(--ink-2); }
+.report-bar .btn { padding: 10px 16px; }

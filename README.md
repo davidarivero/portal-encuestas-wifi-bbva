@@ -12,6 +12,18 @@ Portal independiente para la encuesta **"Tu experiencia Wi-Fi nos importa: ¡Hag
 - Cada respuesta guarda su **canal** (`encuestador` o `autoservicio`) y el panel de resultados lo muestra en una gráfica, en la tabla y en el CSV.
 - Al terminar la encuesta se muestra la **postal Wi-Fi BBVA** (`public/img/postal-wifi-bbva.jpg`) con las recomendaciones de uso de la red.
 
+## Sedes
+
+- En `/encuestador`, el encuestador **debe elegir la sede** (Parques Polanco o Torre Reforma) antes de comenzar. La sede se conserva para las siguientes encuestas hasta que se recarga la página.
+- En autoservicio, la sede puede venir en la liga o el QR: `/?sede=polanco` o `/?sede=reforma`.
+- Las sedes se definen en `src/survey.js` (`SEDES`).
+
+## Panel y reporte ejecutivo
+
+- Las gráficas muestran su valor y porcentaje.
+- Filtros por fecha y sede.
+- **Reporte ejecutivo** del periodo y sede seleccionados en **PDF** o **PowerPoint**: portada, indicadores, hallazgos clave generados a partir de los datos, distribución de calificaciones, comparación por sede, problemas, mejoras, equipos, pisos y comentarios.
+
 ## Lógica de la encuesta
 
 La primera pregunta (1 a 5 estrellas) decide qué preguntas siguen, igual que el formulario original:

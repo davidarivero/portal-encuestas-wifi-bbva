@@ -12,7 +12,7 @@ test('la calificación decide la sección', () => {
 test('acepta una respuesta completa de 5 estrellas', () => {
   const r = validate({ calificacion: 5, piso: '12', equipos: ['Windows BBVA'], colaborador: 'Interno' });
   assert.ok(r.ok);
-  assert.deepEqual(r.value.respuestas, { piso: '12', equipos: ['Windows BBVA'], colaborador: 'Interno', canal: 'autoservicio' });
+  assert.deepEqual(r.value.respuestas, { piso: '12', equipos: ['Windows BBVA'], colaborador: 'Interno', canal: 'autoservicio', sede: '' });
 });
 
 test('rechaza preguntas obligatorias vacías', () => {
@@ -25,4 +25,11 @@ test('"Otro" cuenta como respuesta y se descartan opciones desconocidas', () => 
   assert.ok(r.ok);
   assert.deepEqual(r.value.respuestas.mejoras, []);
   assert.equal(r.value.respuestas.mejoras_otro, 'Más puntos de acceso');
+});
+
+test('el encuestador debe indicar una sede válida', () => {
+  const base = { calificacion: 5, piso: '1', equipos: ['Windows BBVA'], colaborador: 'Interno', canal: 'encuestador' };
+  assert.equal(validate(base).ok, false);
+  assert.equal(validate({ ...base, sede: 'Otra' }).ok, false);
+  assert.equal(validate({ ...base, sede: 'Torre Reforma' }).value.respuestas.sede, 'Torre Reforma');
 });

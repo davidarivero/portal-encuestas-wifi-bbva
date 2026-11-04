@@ -7,7 +7,11 @@
 const EQUIPOS = ['Windows BBVA', 'MacBook BBVA', 'Celular BBVA', 'Tablet BBVA'];
 const COLABORADOR = ['Interno', 'Externo'];
 
+// Sedes donde se aplica la encuesta.
+const SEDES = ['Parques Polanco', 'Torre Reforma'];
+
 const survey = {
+  sedes: SEDES,
   title: 'Tu experiencia Wi-Fi nos importa',
   subtitle: '¡Hagamos la diferencia juntos!',
   rating: {
@@ -103,7 +107,10 @@ function validate(body) {
     }
   }
   answers.canal = CANALES.includes(body.canal) ? body.canal : 'autoservicio';
+  if (body.sede && !SEDES.includes(body.sede)) return { ok: false, error: 'Sede no válida.' };
+  if (answers.canal === 'encuestador' && !body.sede) return { ok: false, error: 'Selecciona la sede antes de iniciar la encuesta.' };
+  answers.sede = body.sede || '';
   return { ok: true, value: { calificacion: rating, seccion, respuestas: answers } };
 }
 
-module.exports = { survey, sectionFor, validate };
+module.exports = { survey, sectionFor, validate, SEDES };

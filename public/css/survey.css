@@ -190,7 +190,7 @@ kbd { font-family: inherit; font-size: 12px; background: #f1f3f8; border: 1px so
 }
 .sv-speech-open .sv-speech { transform: none; }
 @media (min-width: 1100px) {
-  .sv-surveyor.sv-speech-open .sv-main, .sv-surveyor.sv-speech-open .sv-footer { margin-right: 380px; }
+  .sv-surveyor.sv-speech-open .sv-main, .sv-surveyor.sv-speech-open .sv-footer { margin-right: 380px; width: auto; }
   .sv-speech { top: 62px; box-shadow: -1px 0 0 #e1e6f0; }
   .sv-speech-close { display: none !important; }
 }
@@ -212,3 +212,12 @@ kbd { font-family: inherit; font-size: 12px; background: #f1f3f8; border: 1px so
 .sv-speech-tips h3 { margin: 0 0 8px; font-size: 15px; color: var(--bbva-navy); }
 .sv-speech-tips ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--ink-2); display: grid; gap: 8px; }
 .sv-speech-tips strong { color: var(--ink); }
+
+/* Selección de sede (modo encuestador) */
+.sv-sede-box { max-width: 440px; margin: 22px auto 0; text-align: left; padding: 16px; border-radius: 6px; background: #f7f9fd; border: 1px dashed #c9d0e0; }
+.sv-sede-label { margin: 0 0 10px; font-weight: 600; color: var(--bbva-navy); font-size: 15px; }
+.sv-sedes { grid-template-columns: 1fr 1fr; }
+.sv-sedes .sv-opt { background: #fff; animation: none; }
+.sv-sedes .sv-key svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sv-opt.selected .sv-key svg { stroke: #fff; }
+@media (max-width: 480px) { .sv-sedes { grid-template-columns: 1fr; } }

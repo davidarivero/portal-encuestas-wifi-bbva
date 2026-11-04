@@ -6,7 +6,8 @@ const cookieSession = require('cookie-session');
 const { rateLimit } = require('express-rate-limit');
 
 const db = require('./db');
-const { survey, validate } = require('./survey');
+const { survey, validate, SEDES } = require('./survey');
+const report = require('./report');
 const { checkCredentials, missingPasswords, requireAuth } = require('./auth');
 
 const PORT = process.env.PORT || 3000;
@@ -65,6 +66,8 @@ app.use(
 );
 const CHART_JS = path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.min.js');
 app.get('/vendor/chart.umd.js', (req, res) => res.sendFile(CHART_JS));
+const DATALABELS_JS = path.join(path.dirname(require.resolve('chartjs-plugin-datalabels')), 'chartjs-plugin-datalabels.min.js');
+app.get('/vendor/chartjs-plugin-datalabels.js', (req, res) => res.sendFile(DATALABELS_JS));
 
 app.get('/encuestador', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 
@@ -123,9 +126,15 @@ function rangeFrom(query) {
   return range;
 }
 
+// Respuestas del periodo, opcionalmente de una sola sede.
+async function loadRows(query) {
+  const rows = await db.list(rangeFrom(query));
+  return SEDES.includes(query.sede) ? rows.filter((r) => r.respuestas.sede === query.sede) : rows;
+}
+
 app.get('/admin/api/respuestas', requireAuth, async (req, res, next) => {
   try {
-    res.json({ encuesta: survey, respuestas: await db.list(rangeFrom(req.query)) });
+    res.json({ encuesta: survey, respuestas: await loadRows(req.query) });
   } catch (err) {
     next(err);
   }
@@ -148,6 +157,7 @@ const CSV_COLUMNS = [
   ['calificacion', 'Calificación'],
   ['seccion', 'Sección'],
   ['canal', 'Canal'],
+  ['sede', 'Sede'],
   ['piso', 'Piso'],
   ['colaborador', 'Colaborador'],
   ['equipos', 'Equipo de trabajo'],
@@ -169,7 +179,7 @@ function csvCell(v) {
 
 app.get('/admin/api/exportar.csv', requireAuth, async (req, res, next) => {
   try {
-    const rows = await db.list(rangeFrom(req.query));
+    const rows = await loadRows(req.query);
     const lines = [CSV_COLUMNS.map(([, h]) => csvCell(h)).join(',')];
     for (const r of rows) {
       const flat = { ...r.respuestas, id: r.id, creado_en: r.creado_en, calificacion: r.calificacion, seccion: r.seccion };
@@ -179,6 +189,27 @@ app.get('/admin/api/exportar.csv', requireAuth, async (req, res, next) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="encuesta-wifi-bbva-${stamp}.csv"`);
     res.send('﻿' + lines.join('\r\n'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/admin/api/reporte.:formato', requireAuth, async (req, res, next) => {
+  try {
+    const formato = req.params.formato;
+    if (formato !== 'pdf' && formato !== 'pptx') return res.status(404).end();
+    const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const rows = await loadRows(req.query);
+    const summary = report.summarize(rows, survey, {
+      desdeTxt: isDate(req.query.desde) ? req.query.desde : '',
+      hastaTxt: isDate(req.query.hasta) ? req.query.hasta : '',
+      sede: SEDES.includes(req.query.sede) ? req.query.sede : '',
+    });
+    const file = await (formato === 'pdf' ? report.renderPdf(summary) : report.renderPptx(summary));
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', formato === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte-ejecutivo-wifi-bbva-${stamp}.${formato}"`);
+    res.send(file);
   } catch (err) {
     next(err);
   }

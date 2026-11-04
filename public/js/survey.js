@@ -27,6 +27,9 @@
 
   let survey = null;
   let answers = {};
+  // La sede la elige el encuestador y se conserva entre encuestas de la misma sesión.
+  // En autoservicio puede venir en la liga, por ejemplo /?sede=reforma o /?sede=polanco.
+  let sede = '';
   let index = 0; // 0 = bienvenida, 1 = calificación, 2.. = preguntas de la sección
   let card = null;
   let busy = false;
@@ -109,7 +112,7 @@
     backBtn.disabled = index <= 1;
     if (!inQuestions) return;
     const total = answers.calificacion ? totalSteps() : null;
-    count.textContent = total ? `Pregunta ${index} de ${total}` : 'Pregunta 1';
+    count.textContent = (sede ? `${sede} · ` : '') + (total ? `Pregunta ${index} de ${total}` : 'Pregunta 1');
     const pct = total ? Math.round(((index - 1) / total) * 100) : 0;
     progressBar.style.width = `${Math.max(pct, 3)}%`;
     progress.setAttribute('aria-valuenow', String(pct));
@@ -177,10 +180,43 @@
         el('li', {}, [svg('M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'), 'Menos de 2 minutos']),
         el('li', {}, [svg('M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z'), 'Anónima']),
       ]),
+      surveyor ? renderSedePicker() : null,
       el('div', { class: 'sv-actions center' }, [
-        el('button', { type: 'button', class: 'sv-primary sv-big', 'data-autofocus': '', onclick: () => go(1, 'fwd') }, [el('span', { text: 'Comenzar' }), svg('M5 12h14M13 6l6 6-6 6')]),
+        el('button', { type: 'button', class: 'sv-primary sv-big', 'data-autofocus': surveyor && !sede ? undefined : '', onclick: start }, [el('span', { text: 'Comenzar' }), svg('M5 12h14M13 6l6 6-6 6')]),
       ]),
     ], 'sv-welcome');
+  }
+
+  function start() {
+    if (surveyor && !sede) return complain('Selecciona la sede antes de iniciar la encuesta.');
+    go(1, 'fwd');
+  }
+
+  function renderSedePicker() {
+    const list = el('div', { class: 'sv-options sv-sedes', role: 'radiogroup', 'aria-labelledby': 'sv-sede-label' });
+    survey.sedes.forEach((name, i) => {
+      const btn = el('button', {
+        type: 'button', class: `sv-opt${sede === name ? ' selected' : ''}`, role: 'radio', 'aria-checked': String(sede === name), 'data-autofocus': !sede && i === 0 ? '' : undefined,
+        onclick: () => {
+          sede = name;
+          list.querySelectorAll('.sv-opt').forEach((b) => {
+            const on = b === btn;
+            b.classList.toggle('selected', on);
+            b.setAttribute('aria-checked', String(on));
+          });
+          card.querySelector('.sv-error').classList.remove('show');
+        },
+      }, [
+        el('span', { class: 'sv-key' }, svg('M4 21V5l8-3 8 3v16M9 21v-4h6v4M8 8h2M14 8h2M8 12h2M14 12h2')),
+        el('span', { class: 'sv-opt-text', text: name }),
+        el('span', { class: 'sv-check' }, svg('M5 12.5l4.5 4.5L19 7.5')),
+      ]);
+      list.appendChild(btn);
+    });
+    return el('div', { class: 'sv-sede-box' }, [
+      el('p', { class: 'sv-sede-label', id: 'sv-sede-label' }, ['Sede donde aplicas la encuesta ', el('span', { class: 'sv-req', text: '*' })]),
+      list,
+    ]);
   }
 
   function renderRating() {
@@ -342,7 +378,7 @@
     btn.classList.add('loading');
     btn.querySelector('span').textContent = 'Enviando…';
 
-    const payload = { calificacion: answers.calificacion, canal: surveyor ? 'encuestador' : 'autoservicio' };
+    const payload = { calificacion: answers.calificacion, canal: surveyor ? 'encuestador' : 'autoservicio', sede };
     for (const q of questions()) {
       payload[q.id] = answers[q.id] ?? (q.type === 'multi' ? [] : '');
       if (q.allowOther) payload[`${q.id}_otro`] = answers[`${q.id}_otro`] || '';
@@ -460,7 +496,12 @@
   // ---------- inicio ----------
   fetch('/api/encuesta')
     .then((r) => r.json())
-    .then((s) => { survey = s; render('fwd'); })
+    .then((s) => {
+      survey = s;
+      const fromUrl = (new URLSearchParams(location.search).get('sede') || '').toLowerCase();
+      if (fromUrl) sede = survey.sedes.find((n) => n.toLowerCase().includes(fromUrl)) || '';
+      render('fwd');
+    })
     .catch(() => {
       stage.appendChild(el('section', { class: 'sv-card' }, el('p', { class: 'sv-error show', text: 'No se pudo cargar la encuesta. Recarga la página.' })));
     });

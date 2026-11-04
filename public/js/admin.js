@@ -12,6 +12,25 @@
   Chart.defaults.color = '#4a4a4a';
   Chart.defaults.plugins.legend.position = 'bottom';
   Chart.defaults.maintainAspectRatio = false;
+  Chart.register(ChartDataLabels);
+
+  // Etiquetas de valor sobre las gráficas.
+  const LABEL_FONT = { weight: '700', size: 12 };
+  const pctOf = (v, base) => (base ? `${Math.round((v / base) * 100)}%` : '');
+  function barLabels(base, { horizontal = false, decimals = 0 } = {}) {
+    return {
+      display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
+      anchor: 'end', align: 'end', offset: 2, clamp: true, color: C.navy, font: LABEL_FONT,
+      formatter: (v) => (decimals ? v.toFixed(decimals) : base ? `${v} · ${pctOf(v, base)}` : String(v)),
+    };
+  }
+  const barPadding = (horizontal) => ({ padding: horizontal ? { right: 64 } : { top: 22 } });
+  const doughnutLabels = {
+    display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
+    color: '#fff', font: LABEL_FONT, textAlign: 'center',
+    textStrokeColor: 'rgba(7,14,70,.55)', textStrokeWidth: 2,
+    formatter: (v, ctx) => `${v}\n${pctOf(v, ctx.dataset.data.reduce((a, b) => a + b, 0))}`,
+  };
 
   const charts = {};
   const $ = (id) => document.getElementById(id);
@@ -60,14 +79,16 @@
     charts[id] = new Chart(canvas, config);
   }
 
-  function bar(id, counts, { horizontal = false, color = C.blue } = {}) {
+  // base: número de respuestas del grupo, para mostrar el porcentaje junto al valor.
+  function bar(id, counts, { horizontal = false, color = C.blue, base = 0 } = {}) {
     const entries = [...counts.entries()];
     draw(id, {
       type: 'bar',
       data: { labels: entries.map((e) => e[0]), datasets: [{ data: entries.map((e) => e[1]), backgroundColor: color, borderRadius: 3, maxBarThickness: 44 }] },
       options: {
         indexAxis: horizontal ? 'y' : 'x',
-        plugins: { legend: { display: false } },
+        layout: barPadding(horizontal),
+        plugins: { legend: { display: false }, datalabels: barLabels(base, { horizontal }) },
         scales: { [horizontal ? 'x' : 'y']: { beginAtZero: true, ticks: { precision: 0 } }, [horizontal ? 'y' : 'x']: { grid: { display: false } } },
       },
     });
@@ -78,7 +99,7 @@
     draw(id, {
       type: 'doughnut',
       data: { labels: entries.map((e) => e[0]), datasets: [{ data: entries.map((e) => e[1]), backgroundColor: colors || SERIES, borderColor: '#fff', borderWidth: 2 }] },
-      options: { cutout: '60%' },
+      options: { cutout: '55%', plugins: { datalabels: doughnutLabels } },
     });
   }
 
@@ -112,7 +133,7 @@
     draw('c-rating', {
       type: 'bar',
       data: { labels: [...ratingCounts.keys()], datasets: [{ data: [...ratingCounts.values()], backgroundColor: RATING_COLORS, borderRadius: 3, maxBarThickness: 56 }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
+      options: { layout: barPadding(false), plugins: { legend: { display: false }, datalabels: barLabels(total) }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
     });
 
     const days = new Map();
@@ -120,14 +141,27 @@
     draw('c-days', {
       type: 'line',
       data: { labels: [...days.keys()], datasets: [{ data: [...days.values()], borderColor: C.blue, backgroundColor: 'rgba(0,19,145,.12)', fill: true, tension: .3, pointRadius: 3 }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
+      options: { layout: barPadding(false), plugins: { legend: { display: false }, datalabels: { ...barLabels(0), align: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
+    });
+
+    // Por sede: respuestas y calificación promedio
+    const sedes = new Map(data.encuesta.sedes.map((n) => [n, { n: 0, sum: 0 }]));
+    rows.forEach((r) => { const k = r.respuestas.sede || 'Sin sede'; const v = sedes.get(k) || { n: 0, sum: 0 }; v.n += 1; v.sum += r.calificacion; sedes.set(k, v); });
+    const sedeEntries = [...sedes.entries()].filter(([k, v]) => v.n > 0 || k !== 'Sin sede');
+    draw('c-sede', {
+      type: 'bar',
+      data: {
+        labels: sedeEntries.map(([k, v]) => (v.n ? [k, `Promedio ${(v.sum / v.n).toFixed(2)}★`] : k)),
+        datasets: [{ data: sedeEntries.map(([, v]) => v.n), backgroundColor: [C.blue, C.aqua, C.grey], borderRadius: 3, maxBarThickness: 64 }],
+      },
+      options: { layout: barPadding(false), plugins: { legend: { display: false }, datalabels: barLabels(total) }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
     });
 
     doughnut('c-colab', count(rows, 'colaborador', ['Interno', 'Externo']), [C.blue, C.aqua]);
     const canal = new Map([['Encuestador', 0], ['Autoservicio (liga / QR)', 0]]);
     rows.forEach((r) => { const k = r.respuestas.canal === 'encuestador' ? 'Encuestador' : 'Autoservicio (liga / QR)'; canal.set(k, canal.get(k) + 1); });
     doughnut('c-canal', canal, [C.yellow, C.blue]);
-    bar('c-equipos', count(rows, 'equipos', s.excelente.questions[1].options), { color: C.medium });
+    bar('c-equipos', count(rows, 'equipos', s.excelente.questions[1].options), { color: C.medium, base: rows.filter((r) => r.seccion !== 'buena').length });
 
     const pisos = new Map();
     rows.forEach((r) => {
@@ -142,18 +176,18 @@
         labels: pisoEntries.map((e) => `${e[0]} (${e[1].n})`),
         datasets: [{ data: pisoEntries.map((e) => +(e[1].sum / e[1].n).toFixed(2)), backgroundColor: pisoEntries.map((e) => RATING_COLORS[Math.max(0, Math.round(e[1].sum / e[1].n) - 1)]), borderRadius: 3, maxBarThickness: 44 }],
       },
-      options: { plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } },
+      options: { layout: barPadding(false), plugins: { legend: { display: false }, datalabels: barLabels(0, { decimals: 2 }) }, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } },
     });
 
     // Buena (4★)
     const buena = rows.filter((r) => r.seccion === 'buena');
-    bar('c-mejoras', count(buena, 'mejoras', s.buena.questions[0].options), { horizontal: true, color: C.medium });
-    bar('c-dispositivo', count(buena, 'dispositivo_problema', s.buena.questions[2].options), { color: C.aqua });
+    bar('c-mejoras', count(buena, 'mejoras', s.buena.questions[0].options), { horizontal: true, color: C.medium, base: buena.length });
+    bar('c-dispositivo', count(buena, 'dispositivo_problema', s.buena.questions[2].options), { color: C.aqua, base: buena.length });
     textList('l-mejoras-otro', buena, 'mejoras_otro', 'Nadie escribió otro aspecto.');
 
     // Problemas (1-3★)
     const prob = rows.filter((r) => r.seccion === 'problemas');
-    bar('c-problemas', count(prob, 'problemas', s.problemas.questions[0].options), { horizontal: true, color: C.red });
+    bar('c-problemas', count(prob, 'problemas', s.problemas.questions[0].options), { horizontal: true, color: C.red, base: prob.length });
     doughnut('c-frecuencia', count(prob, 'frecuencia', s.problemas.questions[1].options), [C.red, C.yellow, C.light]);
     doughnut('c-reportado', count(prob, 'reportado', s.problemas.questions[3].options), [C.blue, C.grey, C.aqua]);
     textList('l-problemas-otro', prob, 'problemas_otro', 'Nadie escribió otro problema.');
@@ -166,7 +200,7 @@
     const tbody = $('rows');
     tbody.replaceChildren();
     if (!rows.length) {
-      tbody.appendChild(el('tr', {}, el('td', { colspan: '11', class: 'empty', text: 'Sin respuestas en este periodo.' })));
+      tbody.appendChild(el('tr', {}, el('td', { colspan: '12', class: 'empty', text: 'Sin respuestas en este periodo.' })));
       return;
     }
     rows.forEach((r) => {
@@ -180,6 +214,7 @@
       tbody.appendChild(el('tr', {}, [
         el('td', { text: fmtDate(r.creado_en) }),
         el('td', { text: a.canal === 'encuestador' ? 'Encuestador' : 'Autoservicio' }),
+        el('td', { text: a.sede || '' }),
         el('td', {}, el('span', { class: `pill s${r.calificacion}`, text: '★'.repeat(r.calificacion) })),
         el('td', { text: a.piso || '' }),
         el('td', { text: a.colaborador || '' }),
@@ -199,14 +234,19 @@
     const p = new URLSearchParams();
     if (fd.get('desde')) p.set('desde', fd.get('desde'));
     if (fd.get('hasta')) p.set('hasta', fd.get('hasta'));
+    if (fd.get('sede')) p.set('sede', fd.get('sede'));
     return p.toString();
   }
 
   async function load() {
     const q = query();
-    $('export').href = '/admin/api/exportar.csv' + (q ? `?${q}` : '');
+    const qs = q ? `?${q}` : '';
+    $('export').href = `/admin/api/exportar.csv${qs}`;
+    $('report-pdf').href = `/admin/api/reporte.pdf${qs}`;
+    $('report-pptx').href = `/admin/api/reporte.pptx${qs}`;
     const fd = new FormData($('filters'));
-    $('k-range').textContent = fd.get('desde') || fd.get('hasta') ? `${fd.get('desde') || 'inicio'} a ${fd.get('hasta') || 'hoy'}` : 'Todo el periodo';
+    const periodo = fd.get('desde') || fd.get('hasta') ? `${fd.get('desde') || 'inicio'} a ${fd.get('hasta') || 'hoy'}` : 'Todo el periodo';
+    $('k-range').textContent = fd.get('sede') ? `${periodo} · ${fd.get('sede')}` : periodo;
     const res = await fetch('/admin/api/respuestas' + (q ? `?${q}` : ''));
     if (res.status === 401) { location.href = '/admin/login'; return; }
     data = await res.json();
