@@ -55,9 +55,12 @@ function summarize(rows, survey, filters = {}) {
   const sinSede = rows.filter((r) => !r.respuestas.sede).length;
   if (sinSede) sedes.push({ label: 'Sin sede', n: sinSede, avg: avg(rows.filter((r) => !r.respuestas.sede)) });
 
+  // Los mismos números de piso existen en las dos sedes: si hay más de una sede, se separan.
+  const variasSedes = new Set(rows.map((r) => r.respuestas.sede || '')).size > 1;
   const pisosMap = new Map();
   rows.forEach((r) => {
-    const k = normalizaPiso(r.respuestas.piso);
+    const sede = (r.respuestas.sede || '').split(' ').pop();
+    const k = variasSedes && sede ? `${sede} · ${normalizaPiso(r.respuestas.piso)}` : normalizaPiso(r.respuestas.piso);
     const p = pisosMap.get(k) || { label: k, n: 0, sum: 0 };
     p.n += 1; p.sum += r.calificacion; pisosMap.set(k, p);
   });

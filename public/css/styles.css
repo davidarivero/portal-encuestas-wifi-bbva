@@ -169,3 +169,7 @@ tr:hover td { background: #f7f9fd; }
 .filters select { padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; min-width: 150px; }
 .report-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin: -6px 0 20px; font-size: 13px; color: var(--ink-2); }
 .report-bar .btn { padding: 10px 16px; }
+.report-bar label.btn { cursor: pointer; }
+.import-msg { margin: -10px 0 18px; padding: 10px 14px; border-radius: 4px; font-size: 14px; }
+.import-msg.ok { background: #e6f4ea; color: #1e5b2e; }
+.import-msg.err { background: #fde8eb; color: #8a1c2c; }

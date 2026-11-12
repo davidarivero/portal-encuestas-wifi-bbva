@@ -24,6 +24,15 @@ Portal independiente para la encuesta **"Tu experiencia Wi-Fi nos importa: ¡Hag
 - Filtros por fecha y sede.
 - **Reporte ejecutivo** del periodo y sede seleccionados en **PDF** o **PowerPoint**: portada, indicadores, hallazgos clave generados a partir de los datos, distribución de calificaciones, comparación por sede, problemas, mejoras, equipos, pisos y comentarios.
 
+## Importar respuestas capturadas fuera del portal
+
+En el panel, **Importar respuestas** carga un archivo `.json` de importación (por ejemplo, las respuestas que se capturaron en Google Sheets). El archivo puede:
+
+- **agregar respuestas nuevas** con su fecha original (`nuevos`). Cada una lleva un `origen_id`; si el archivo se vuelve a cargar, las que ya existen se omiten, así que no se duplican;
+- **corregir sede y piso** de respuestas que ya están en el portal (`actualizar`, por `id`).
+
+Todo se aplica en una sola transacción: si algo falla, no se carga nada. El piso se guarda normalizado ("Piso 48", "Nivel 48" → "48"), también en las respuestas nuevas de la encuesta.
+
 ## Lógica de la encuesta
 
 La primera pregunta (1 a 5 estrellas) decide qué preguntas siguen, igual que el formulario original:

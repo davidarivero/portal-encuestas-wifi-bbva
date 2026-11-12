@@ -66,6 +66,13 @@ function sectionFor(rating) {
 }
 
 const MAX_TEXT = 1000;
+
+// "Piso 48", "piso48", "Nivel 48" o "48.0" -> "48". Cualquier otro texto se deja igual (p. ej. "PB").
+function normalizaPiso(v) {
+  const s = String(v ?? '').trim();
+  const m = s.match(/^(?:piso|nivel|p)?\s*(\d{1,3})(?:\.0+)?$/i);
+  return m ? String(Number(m[1])) : s;
+}
 // Cómo se respondió: en persona con un encuestador o por cuenta propia (liga / QR).
 const CANALES = ['encuestador', 'autoservicio'];
 
@@ -84,7 +91,7 @@ function validate(body) {
     if (q.type === 'text' || q.type === 'textarea') {
       const v = typeof raw === 'string' ? raw.trim().slice(0, MAX_TEXT) : '';
       if (q.required && !v) return { ok: false, error: `Responde: ${q.label}` };
-      answers[q.id] = v;
+      answers[q.id] = q.id === 'piso' ? normalizaPiso(v) : v;
     } else if (q.type === 'single') {
       if (raw === undefined || raw === '' || raw === null) {
         if (q.required) return { ok: false, error: `Responde: ${q.label}` };
@@ -113,4 +120,60 @@ function validate(body) {
   return { ok: true, value: { calificacion: rating, seccion, respuestas: answers } };
 }
 
-module.exports = { survey, sectionFor, validate, SEDES };
+// ---------- Importación masiva (respuestas capturadas fuera del portal) ----------
+// Formato del archivo: { formato: 'importacion-encuesta-wifi-bbva', actualizar: [{ id, sede, piso }], nuevos: [{ creado_en, calificacion, respuestas }] }.
+// Es más flexible que validate() porque los datos históricos pueden tener campos vacíos,
+// pero solo acepta las opciones conocidas de cada pregunta.
+const MAX_IMPORT = 10000;
+const str = (v) => (typeof v === 'string' ? v.trim().slice(0, MAX_TEXT) : '');
+
+function sanitizeImport(body) {
+  if (!body || body.formato !== 'importacion-encuesta-wifi-bbva') return { ok: false, error: 'El archivo no es una importación de la encuesta.' };
+  const actualizar = Array.isArray(body.actualizar) ? body.actualizar : [];
+  const nuevos = Array.isArray(body.nuevos) ? body.nuevos : [];
+  if (actualizar.length + nuevos.length > MAX_IMPORT) return { ok: false, error: `Máximo ${MAX_IMPORT} registros por archivo.` };
+  const outA = [];
+  for (const [i, u] of actualizar.entries()) {
+    const id = Number(u && u.id);
+    if (!Number.isInteger(id) || id < 1) return { ok: false, error: `actualizar[${i}]: id inválido.` };
+    const cambios = {};
+    if (u.sede !== undefined) {
+      if (u.sede && !SEDES.includes(u.sede)) return { ok: false, error: `actualizar[${i}]: sede no válida.` };
+      cambios.sede = u.sede || '';
+    }
+    if (u.piso !== undefined) cambios.piso = normalizaPiso(str(u.piso));
+    if (Object.keys(cambios).length) outA.push({ id, cambios });
+  }
+  const outN = [];
+  for (const [i, n] of nuevos.entries()) {
+    const where = `nuevos[${i}]`;
+    const rating = Number(n && n.calificacion);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return { ok: false, error: `${where}: calificación inválida.` };
+    const fecha = new Date(n.creado_en);
+    if (Number.isNaN(fecha.getTime())) return { ok: false, error: `${where}: fecha inválida.` };
+    const src = n.respuestas || {};
+    const origenId = str(src.origen_id);
+    if (!origenId) return { ok: false, error: `${where}: falta origen_id.` };
+    if (src.sede && !SEDES.includes(src.sede)) return { ok: false, error: `${where}: sede no válida.` };
+    const seccion = sectionFor(rating);
+    const a = {};
+    for (const q of survey.sections[seccion].questions) {
+      const raw = src[q.id];
+      if (q.type === 'text' || q.type === 'textarea') a[q.id] = q.id === 'piso' ? normalizaPiso(str(raw)) : str(raw);
+      else if (q.type === 'single') a[q.id] = q.options.includes(raw) ? raw : '';
+      else {
+        const list = Array.isArray(raw) ? raw : [];
+        a[q.id] = [...new Set(list.filter((v) => q.options.includes(v)))];
+        if (q.allowOther) a[`${q.id}_otro`] = str(src[`${q.id}_otro`]);
+      }
+    }
+    a.canal = CANALES.includes(src.canal) ? src.canal : 'encuestador';
+    a.sede = src.sede || '';
+    a.origen = str(src.origen) || 'importacion';
+    a.origen_id = origenId;
+    outN.push({ creado_en: fecha.toISOString(), calificacion: rating, seccion, respuestas: a });
+  }
+  return { ok: true, value: { actualizar: outA, nuevos: outN } };
+}
+
+module.exports = { survey, sectionFor, validate, sanitizeImport, normalizaPiso, SEDES };

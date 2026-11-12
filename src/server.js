@@ -6,7 +6,7 @@ const cookieSession = require('cookie-session');
 const { rateLimit } = require('express-rate-limit');
 
 const db = require('./db');
-const { survey, validate, SEDES } = require('./survey');
+const { survey, validate, sanitizeImport, SEDES } = require('./survey');
 const report = require('./report');
 const { checkCredentials, missingPasswords, requireAuth } = require('./auth');
 
@@ -42,6 +42,8 @@ app.use(
     },
   })
 );
+// La importación masiva acepta archivos grandes; el resto de las rutas, solo 50 KB.
+app.use('/admin/api/importar', express.json({ limit: '10mb' }));
 app.use(express.json({ limit: '50kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 app.use(
@@ -146,6 +148,19 @@ app.delete('/admin/api/respuestas/:id', requireAuth, async (req, res, next) => {
     if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Id inválido.' });
     await db.remove(id);
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Importa respuestas capturadas fuera del portal (p. ej. Google Sheets) y corrige sede/piso de las existentes.
+app.post('/admin/api/importar', requireAuth, async (req, res, next) => {
+  try {
+    const result = sanitizeImport(req.body);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    const out = await db.importar(result.value);
+    console.log(`[importar] ${req.session.user.username || ''}: ${JSON.stringify(out)}`);
+    res.json({ ok: true, ...out });
   } catch (err) {
     next(err);
   }

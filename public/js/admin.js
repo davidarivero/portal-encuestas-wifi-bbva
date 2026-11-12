@@ -163,20 +163,25 @@
     doughnut('c-canal', canal, [C.yellow, C.blue]);
     bar('c-equipos', count(rows, 'equipos', s.excelente.questions[1].options), { color: C.medium, base: rows.filter((r) => r.seccion !== 'buena').length });
 
+    // Los mismos números de piso existen en las dos sedes: si hay más de una sede, se separan.
+    const variasSedes = new Set(rows.map((r) => r.respuestas.sede || '')).size > 1;
     const pisos = new Map();
     rows.forEach((r) => {
-      const k = normalizaPiso(r.respuestas.piso);
+      const sede = (r.respuestas.sede || '').split(' ').pop();
+      const k = variasSedes && sede ? `${sede} · ${normalizaPiso(r.respuestas.piso)}` : normalizaPiso(r.respuestas.piso);
       const p = pisos.get(k) || { sum: 0, n: 0 };
       p.sum += r.calificacion; p.n += 1; pisos.set(k, p);
     });
     const pisoEntries = [...pisos.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es', { numeric: true }));
+    // Barras horizontales: con las dos sedes hay decenas de pisos y así se leen todos.
+    $('c-pisos').parentElement.style.height = `${Math.max(260, pisoEntries.length * 22 + 40)}px`;
     draw('c-pisos', {
       type: 'bar',
       data: {
         labels: pisoEntries.map((e) => `${e[0]} (${e[1].n})`),
-        datasets: [{ data: pisoEntries.map((e) => +(e[1].sum / e[1].n).toFixed(2)), backgroundColor: pisoEntries.map((e) => RATING_COLORS[Math.max(0, Math.round(e[1].sum / e[1].n) - 1)]), borderRadius: 3, maxBarThickness: 44 }],
+        datasets: [{ data: pisoEntries.map((e) => +(e[1].sum / e[1].n).toFixed(2)), backgroundColor: pisoEntries.map((e) => RATING_COLORS[Math.max(0, Math.round(e[1].sum / e[1].n) - 1)]), borderRadius: 3, maxBarThickness: 18 }],
       },
-      options: { layout: barPadding(false), plugins: { legend: { display: false }, datalabels: barLabels(0, { decimals: 2 }) }, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } },
+      options: { indexAxis: 'y', layout: barPadding(true), plugins: { legend: { display: false }, datalabels: barLabels(0, { horizontal: true, decimals: 2 }) }, scales: { x: { min: 0, max: 5, ticks: { stepSize: 1 } }, y: { grid: { display: false }, ticks: { autoSkip: false } } } },
     });
 
     // Buena (4★)
@@ -275,6 +280,26 @@
   document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($(btn.dataset.copy).textContent); btn.textContent = 'Copiada'; setTimeout(() => (btn.textContent = 'Copiar'), 1500); } catch (_) { /* sin permiso de portapapeles */ }
   }));
+
+  // ---------- importación ----------
+  $('import-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const msg = $('import-msg');
+    const show = (text, ok) => { msg.textContent = text; msg.className = `import-msg ${ok ? 'ok' : 'err'}`; };
+    let body;
+    try { body = JSON.parse(await file.text()); } catch (_) { show('El archivo no es un JSON válido.', false); return; }
+    const total = (body.nuevos || []).length;
+    if (!confirm(`Se importarán ${total} respuestas nuevas y se corregirán ${(body.actualizar || []).length} existentes. ¿Continuar?`)) return;
+    show('Importando…', true);
+    const res = await fetch('/admin/api/importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.status === 401) { location.href = '/admin/login'; return; }
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) { show(out.error || 'No se pudo importar.', false); return; }
+    show(`Importación lista: ${out.insertadas} respuestas nuevas, ${out.actualizadas} corregidas y ${out.omitidas} omitidas porque ya estaban cargadas.`, true);
+    load();
+  });
 
   fetch('/admin/api/yo').then((r) => r.json()).then((u) => { $('who').textContent = u.name; }).catch(() => {});
   load();

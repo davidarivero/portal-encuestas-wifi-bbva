@@ -47,6 +47,36 @@ if (process.env.DATABASE_URL) {
     async remove(id) {
       await pool.query('DELETE FROM respuestas WHERE id = $1', [id]);
     },
+    // Importación masiva en una sola transacción: corrige sede/piso de respuestas
+    // existentes y agrega las nuevas. Las que ya existen (mismo origen_id) se omiten.
+    async importar({ actualizar, nuevos }) {
+      const client = await pool.connect();
+      const out = { actualizadas: 0, insertadas: 0, omitidas: 0 };
+      try {
+        await client.query('BEGIN');
+        await client.query("CREATE INDEX IF NOT EXISTS respuestas_origen_id_idx ON respuestas ((respuestas->>'origen_id'))");
+        for (const u of actualizar) {
+          const r = await client.query('UPDATE respuestas SET respuestas = respuestas || $2::jsonb WHERE id = $1', [u.id, JSON.stringify(u.cambios)]);
+          out.actualizadas += r.rowCount;
+        }
+        for (const n of nuevos) {
+          const r = await client.query(
+            `INSERT INTO respuestas (creado_en, calificacion, seccion, respuestas)
+             SELECT $1, $2, $3, $4::jsonb
+             WHERE NOT EXISTS (SELECT 1 FROM respuestas WHERE respuestas->>'origen_id' = $5)`,
+            [n.creado_en, n.calificacion, n.seccion, JSON.stringify(n.respuestas), n.respuestas.origen_id]
+          );
+          if (r.rowCount) out.insertadas += 1; else out.omitidas += 1;
+        }
+        await client.query('COMMIT');
+        return out;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
   };
 } else {
   const file = process.env.DATA_FILE || path.join(__dirname, '..', 'data', 'respuestas.json');
@@ -74,6 +104,24 @@ if (process.env.DATABASE_URL) {
     },
     async remove(id) {
       write(read().filter((r) => r.id !== id));
+    },
+    async importar({ actualizar, nuevos }) {
+      const rows = read();
+      const out = { actualizadas: 0, insertadas: 0, omitidas: 0 };
+      for (const u of actualizar) {
+        const r = rows.find((x) => x.id === u.id);
+        if (r) { Object.assign(r.respuestas, u.cambios); out.actualizadas += 1; }
+      }
+      const existentes = new Set(rows.map((r) => r.respuestas.origen_id).filter(Boolean));
+      let id = rows.reduce((m, r) => Math.max(m, r.id), 0);
+      for (const n of nuevos) {
+        if (existentes.has(n.respuestas.origen_id)) { out.omitidas += 1; continue; }
+        existentes.add(n.respuestas.origen_id);
+        rows.push({ id: ++id, ...n });
+        out.insertadas += 1;
+      }
+      write(rows);
+      return out;
     },
   };
 }

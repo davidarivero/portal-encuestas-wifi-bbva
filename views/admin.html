@@ -46,7 +46,10 @@
         <span>Reporte ejecutivo del periodo y sede seleccionados:</span>
         <a class="btn btn-primary" id="report-pdf" href="/admin/api/reporte.pdf">Descargar PDF</a>
         <a class="btn btn-primary" id="report-pptx" href="/admin/api/reporte.pptx">Descargar PowerPoint</a>
+        <label class="btn btn-secondary" for="import-file" title="Cargar respuestas capturadas fuera del portal (archivo de importación .json)">Importar respuestas</label>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
       </div>
+      <div class="import-msg hidden" id="import-msg" role="status"></div>
 
       <div class="kpis">
         <div class="kpi"><div class="lbl">Respuestas</div><div class="val" id="k-total">0</div><div class="sub" id="k-range">Todo el periodo</div></div>
